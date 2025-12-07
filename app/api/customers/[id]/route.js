@@ -1,0 +1,127 @@
+import { NextResponse } from 'next/server';
+import { customerDB } from '@/lib/database';
+
+export async function GET(request, { params }) {
+  try {
+    const sessionCookie = request.cookies.get('session');
+    let session = null;
+    
+    if (sessionCookie) {
+      try {
+        session = JSON.parse(sessionCookie.value);
+      } catch (e) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+    }
+    
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
+    const customer = await customerDB.findById(params.id);
+    if (!customer) {
+      return NextResponse.json(
+        { error: 'Customer not found' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json({ customer });
+  } catch (error) {
+    console.error('Get customer error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request, { params }) {
+  try {
+    const sessionCookie = request.cookies.get('session');
+    let session = null;
+    
+    if (sessionCookie) {
+      try {
+        session = JSON.parse(sessionCookie.value);
+      } catch (e) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+    }
+    
+    if (!session || !['superadmin', 'admin'].includes(session.role)) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
+      );
+    }
+    
+    const updates = await request.json();
+    const updatedCustomer = await customerDB.update(params.id, updates);
+    
+    if (!updatedCustomer) {
+      return NextResponse.json(
+        { error: 'Customer not found' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json({ success: true, customer: updatedCustomer });
+  } catch (error) {
+    console.error('Update customer error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    const sessionCookie = request.cookies.get('session');
+    let session = null;
+    
+    if (sessionCookie) {
+      try {
+        session = JSON.parse(sessionCookie.value);
+      } catch (e) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+    }
+    
+    if (!session || !['superadmin', 'admin'].includes(session.role)) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
+      );
+    }
+    
+    const deleted = await customerDB.delete(params.id);
+    if (!deleted) {
+      return NextResponse.json(
+        { error: 'Customer not found' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Delete customer error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

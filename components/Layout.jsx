@@ -1,0 +1,172 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
+
+export default function Layout({ children, userRole, userName }) {
+  const [user, setUser] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    // Get user from session
+    fetch('/api/auth/me')
+      .then(res => {
+        if (res.ok) {
+          return res.json();
+        }
+        throw new Error('Not authenticated');
+      })
+      .then(data => {
+        if (data.user) {
+          setUser(data.user);
+        } else {
+          router.push('/login');
+        }
+      })
+      .catch(() => {
+        // Only redirect if not already on login/register page
+        if (pathname !== '/login' && pathname !== '/register') {
+          router.push('/login');
+        }
+      });
+  }, [pathname, router]);
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/login');
+  };
+
+  const getNavItems = () => {
+    if (userRole === 'superadmin') {
+      return [
+        { href: '/superadmin/dashboard', label: 'Dashboard', icon: '📊' },
+        { href: '/superadmin/users', label: 'Users', icon: '👥' },
+        { href: '/superadmin/permissions', label: 'Permissions (CRUD)', icon: '🔐' },
+        { href: '/superadmin/products', label: 'Products', icon: '📦' },
+        { href: '/superadmin/pos', label: 'POS', icon: '🛒' },
+        { href: '/superadmin/sales', label: 'Sales', icon: '💰' },
+        { href: '/superadmin/customers', label: 'Customers', icon: '👤' },
+        { href: '/superadmin/inventory', label: 'Inventory', icon: '📋' },
+        { href: '/superadmin/reports', label: 'Reports', icon: '📈' },
+      ];
+    } else if (userRole === 'admin') {
+      return [
+        { href: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
+        { href: '/admin/products', label: 'Products', icon: '📦' },
+        { href: '/admin/pos', label: 'POS', icon: '🛒' },
+        { href: '/admin/sales', label: 'Sales', icon: '💰' },
+        { href: '/admin/customers', label: 'Customers', icon: '👤' },
+        { href: '/admin/inventory', label: 'Inventory', icon: '📋' },
+      ];
+    } else {
+      return [
+        { href: '/user/dashboard', label: 'Dashboard', icon: '📊' },
+        { href: '/user/pos', label: 'POS', icon: '🛒' },
+        { href: '/user/sales', label: 'My Sales', icon: '💰' },
+      ];
+    }
+  };
+
+  if (!user) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <aside className={`${sidebarCollapsed ? 'w-14' : 'w-56'} bg-white shadow-lg fixed h-full transition-all duration-300 z-20 flex flex-col`}>
+        <div className={`${sidebarCollapsed ? 'p-2' : 'p-3'} border-b flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
+          {!sidebarCollapsed && (
+            <h1 className="text-lg font-bold text-indigo-600">POS System</h1>
+          )}
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition text-gray-600 hover:text-gray-900"
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            )}
+          </button>
+        </div>
+        <nav className="p-2 flex-1 overflow-y-auto">
+          <ul className="space-y-1">
+            {getNavItems().map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center ${sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2'} rounded-lg text-sm font-medium transition group relative ${
+                    pathname === item.href
+                      ? 'bg-indigo-100 text-indigo-700 border-l-4 border-indigo-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                  title={sidebarCollapsed ? item.label : ''}
+                >
+                  {sidebarCollapsed && (
+                    <span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
+                      {item.label}
+                    </span>
+                  )}
+                  <span className={sidebarCollapsed ? 'text-xl' : 'mr-2'}>{item.icon}</span>
+                  {!sidebarCollapsed && <span>{item.label}</span>}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* User Info and Logout at Bottom */}
+        <div className={`${sidebarCollapsed ? 'p-2' : 'p-3'} border-t mt-auto`}>
+          {!sidebarCollapsed && (
+            <div className="mb-2">
+              <p className="text-xs text-gray-500 mb-1">Logged in as</p>
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {userName || user.name}
+              </p>
+              <p className="text-xs text-gray-500">
+                ({userRole})
+              </p>
+            </div>
+          )}
+          <button
+            onClick={handleLogout}
+            className={`w-full bg-red-600 text-white ${sidebarCollapsed ? 'px-2 py-2' : 'px-3 py-2'} rounded-lg hover:bg-red-700 transition flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-center gap-2'} text-sm font-medium`}
+            title={sidebarCollapsed ? 'Logout' : ''}
+          >
+            {sidebarCollapsed ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>Logout</span>
+              </>
+            )}
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'ml-14' : 'ml-56'}`}>
+
+        {/* Main Content */}
+        <main className="p-6">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
+

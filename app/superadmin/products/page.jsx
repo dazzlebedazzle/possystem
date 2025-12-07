@@ -1,0 +1,297 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Layout from '@/components/Layout';
+import { toast } from '@/lib/toast';
+
+export default function SuperAdminProducts() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({
+    EAN_code: '',
+    product_name: '',
+    images: '',
+    unit: 'kg',
+    supplier: '',
+    qty: '',
+    qty_sold: '0',
+    expiry_date: '',
+    date_arrival: '',
+    price: '',
+    category: 'general'
+  });
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch('/api/products');
+      const data = await response.json();
+      setProducts(data.products || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateProduct = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        toast.success('Product created successfully!');
+        setShowModal(false);
+        setFormData({ 
+          EAN_code: '', 
+          product_name: '', 
+          images: '', 
+          unit: 'kg', 
+          supplier: '', 
+          qty: '', 
+          qty_sold: '0', 
+          expiry_date: '', 
+          date_arrival: '', 
+          price: '', 
+          category: 'general' 
+        });
+        fetchProducts();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to create product');
+      }
+    } catch (error) {
+      console.error('Error creating product:', error);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+
+    try {
+      const response = await fetch(`/api/products/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Product deleted successfully!');
+        fetchProducts();
+      } else {
+        toast.error('Failed to delete product');
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+    }
+  };
+
+  return (
+    <Layout userRole="superadmin">
+      <div className="px-4 py-6 sm:px-0">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Products</h1>
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+          >
+            Add Product
+          </button>
+        </div>
+
+        {loading ? (
+          <div>Loading...</div>
+        ) : (
+          <div className="bg-white shadow overflow-hidden sm:rounded-md">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EAN Code</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Available Qty</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Qty</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty Sold</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {products.map((product) => {
+                  const productId = product._id || product.id;
+                  return (
+                    <tr key={productId}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.EAN_code}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.product_name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.unit}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{product.price || 0}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(product.qty || 0) - (product.qty_sold || 0)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.qty}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.qty_sold || 0}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.supplier}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleDelete(productId)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {showModal && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+            <div className="relative mx-auto p-4 border w-80 shadow-lg rounded-lg bg-white">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-bold text-gray-900">Add New Product</h3>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-xl"
+                >
+                  ×
+                </button>
+              </div>
+              <form onSubmit={handleCreateProduct} className="space-y-3 max-h-[70vh] overflow-y-auto">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">EAN Code *</label>
+                  <input
+                    type="number"
+                    value={formData.EAN_code}
+                    onChange={(e) => setFormData({ ...formData, EAN_code: e.target.value })}
+                    required
+                    className="block w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Product Name *</label>
+                  <input
+                    type="text"
+                    value={formData.product_name}
+                    onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
+                    required
+                    className="block w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Unit</label>
+                  <input
+                    type="text"
+                    value={formData.unit}
+                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                    className="block w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Price</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    className="block w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Quantity (Qty) *</label>
+                  <input
+                    type="number"
+                    value={formData.qty}
+                    onChange={(e) => setFormData({ ...formData, qty: e.target.value })}
+                    required
+                    className="block w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Quantity Sold</label>
+                  <input
+                    type="number"
+                    value={formData.qty_sold}
+                    onChange={(e) => setFormData({ ...formData, qty_sold: e.target.value })}
+                    className="block w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Supplier</label>
+                  <input
+                    type="text"
+                    value={formData.supplier}
+                    onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                    className="block w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Images</label>
+                  <input
+                    type="text"
+                    value={formData.images}
+                    onChange={(e) => setFormData({ ...formData, images: e.target.value })}
+                    placeholder="Image filename"
+                    className="block w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Expiry Date</label>
+                  <input
+                    type="text"
+                    value={formData.expiry_date}
+                    onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                    placeholder="MM/DD/YYYY"
+                    className="block w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Date Arrival</label>
+                  <input
+                    type="text"
+                    value={formData.date_arrival}
+                    onChange={(e) => setFormData({ ...formData, date_arrival: e.target.value })}
+                    placeholder="MM/DD/YYYY"
+                    className="block w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
+                  <input
+                    type="text"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="block w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div className="flex justify-end space-x-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
+                  >
+                    Create
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+}
+
