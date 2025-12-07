@@ -54,7 +54,7 @@ export default function SuperAdminReports() {
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <div className="bg-white overflow-hidden shadow rounded-lg p-6">
               <h3 className="text-sm font-medium text-gray-500">Total Revenue</h3>
-              <p className="mt-2 text-3xl font-bold text-gray-900">${reports.totalRevenue.toFixed(2)}</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">₹{reports.totalRevenue.toFixed(2)}</p>
             </div>
             <div className="bg-white overflow-hidden shadow rounded-lg p-6">
               <h3 className="text-sm font-medium text-gray-500">Total Sales</h3>

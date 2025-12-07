@@ -122,8 +122,8 @@ export default function AdminInventory() {
                   >
                     <option value="">Select Product</option>
                     {products.map((product) => (
-                      <option key={product.id} value={product.id}>
-                        {product.name} (Stock: {product.stock})
+                      <option key={product._id || product.id} value={product._id || product.id}>
+                        {product.product_name || product.name} (Stock: {(product.qty || 0) - (product.qty_sold || 0)})
                       </option>
                     ))}
                   </select>

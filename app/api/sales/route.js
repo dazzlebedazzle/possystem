@@ -68,7 +68,7 @@ export async function POST(request) {
       );
     }
     
-    const { items, customerId, paymentMethod } = await request.json();
+    const { items, customerId, customerName, customerMobile, customerAddress, paymentMethod } = await request.json();
     
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -89,18 +89,29 @@ export async function POST(request) {
           { status: 400 }
         );
       }
+      
       // Calculate available stock: qty - qty_sold
       const availableStock = (product.qty || 0) - (product.qty_sold || 0);
-      if (availableStock < item.quantity) {
+      
+      // Convert item quantity to stock unit for comparison
+      const unit = item.unit || product.unit || 'kg';
+      const itemQuantityInStockUnit = unit === 'kg' ? item.quantity / 1000 : item.quantity;
+      
+      if (availableStock < itemQuantityInStockUnit) {
         return NextResponse.json(
-          { error: `Insufficient stock for ${product.product_name || product.name}` },
+          { error: `Insufficient stock for ${product.product_name || product.name}. Only ${availableStock} ${unit} available` },
           { status: 400 }
         );
       }
-      total += (product.price || 0) * item.quantity;
+      
+      // Calculate price based on unit
+      const qtyInUnit = unit === 'kg' ? item.quantity / 1000 : item.quantity;
+      total += (product.price || 0) * qtyInUnit;
+      
       saleItems.push({
         productId: product._id || product.id,
         quantity: item.quantity,
+        unit: unit,
         price: product.price || 0,
         name: product.product_name || product.name
       });
@@ -110,6 +121,9 @@ export async function POST(request) {
     const sale = await saleDB.create({
       userId: session.userId,
       customerId: customerId || null,
+      customerName: customerName || null,
+      customerMobile: customerMobile || null,
+      customerAddress: customerAddress || null,
       items: saleItems,
       total,
       paymentMethod: paymentMethod || 'cash',
@@ -121,8 +135,12 @@ export async function POST(request) {
       const product = await productDB.findById(item.productId);
       if (product) {
         const currentQtySold = product.qty_sold || 0;
+        // Convert quantity to stock unit before updating
+        const unit = item.unit || product.unit || 'kg';
+        const quantityInStockUnit = unit === 'kg' ? item.quantity / 1000 : item.quantity;
+        
         await productDB.update(item.productId, {
-          qty_sold: currentQtySold + item.quantity
+          qty_sold: currentQtySold + quantityInStockUnit
         });
       }
     }

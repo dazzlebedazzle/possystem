@@ -9,7 +9,12 @@ const saleItemSchema = new mongoose.Schema({
   quantity: {
     type: Number,
     required: true,
-    min: 1
+    min: 0
+  },
+  unit: {
+    type: String,
+    enum: ['kg', 'packets'],
+    default: 'kg'
   },
   price: {
     type: Number,
@@ -32,6 +37,18 @@ const saleSchema = new mongoose.Schema({
     ref: 'Customer',
     default: null
   },
+  customerName: {
+    type: String,
+    default: null
+  },
+  customerMobile: {
+    type: String,
+    default: null
+  },
+  customerAddress: {
+    type: String,
+    default: null
+  },
   items: {
     type: [saleItemSchema],
     required: true
@@ -43,7 +60,7 @@ const saleSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['cash', 'card', 'mobile'],
+    enum: ['cash', 'card', 'upi', 'Cash', 'Card', 'UPI'],
     default: 'cash'
   },
   status: {

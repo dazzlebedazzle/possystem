@@ -99,7 +99,7 @@ export default function AdminDashboard() {
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">Total Revenue</dt>
-                      <dd className="text-lg font-medium text-gray-900">${stats.totalRevenue.toFixed(2)}</dd>
+                      <dd className="text-lg font-medium text-gray-900">₹{stats.totalRevenue.toFixed(2)}</dd>
                     </dl>
                   </div>
                 </div>

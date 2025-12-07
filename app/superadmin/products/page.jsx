@@ -131,10 +131,10 @@ export default function SuperAdminProducts() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.EAN_code}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.product_name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.unit}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{product.price || 0}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(product.qty || 0) - (product.qty_sold || 0)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.qty}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.qty_sold || 0}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{parseFloat(product.price || 0).toFixed(2)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{Math.round((product.qty || 0) - (product.qty_sold || 0))}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{Math.round(product.qty || 0)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{Math.round(product.qty_sold || 0)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.supplier}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
@@ -208,6 +208,8 @@ export default function SuperAdminProducts() {
                   <label className="block text-xs font-medium text-gray-700 mb-1">Quantity (Qty) *</label>
                   <input
                     type="number"
+                    step="1"
+                    min="0"
                     value={formData.qty}
                     onChange={(e) => setFormData({ ...formData, qty: e.target.value })}
                     required
@@ -218,6 +220,8 @@ export default function SuperAdminProducts() {
                   <label className="block text-xs font-medium text-gray-700 mb-1">Quantity Sold</label>
                   <input
                     type="number"
+                    step="1"
+                    min="0"
                     value={formData.qty_sold}
                     onChange={(e) => setFormData({ ...formData, qty_sold: e.target.value })}
                     className="block w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm"
